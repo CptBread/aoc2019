@@ -13,30 +13,127 @@ fn main() {
     day2b();
     day3a();
     day3b();
+    day4a();
+    // day4b();
 }
 
-// fn next_password_4(cur:usize) -> usize {
-//     let limit = 675810;
-//     let digits = 6;
-//     let chars = cur.to_string().chars();
-//     let mut last = 'I'; // just need an invalid char
-//     if let Some(pair_idx) = chars.clone().find(|c| {
-//         if c != last {
-//             last = c;
-//             return false;
-//         }
-//         true
-//     }) {
-        
-//     }
-//     0
-// }
+fn find_pairs_u8(bytes:&[u8]) -> Option<usize> {
+	let mut last = bytes.last().map_or(99, |c| *c + 1);
+	bytes.iter().rposition(|c| {
+		if *c != last {
+			last = *c;
+			return false;
+		}
+		true
+	})
+}
 
-// fn day4a() {
-//     let mut val = 134792;
-//     let mut pair_idx = usize::MAX;
+struct PasswordIter {
+	digits:Vec<u8>,
+	pair:Option<usize>,
+	current:usize,
+	limit:usize,
+}
 
-// }
+impl PasswordIter {
+	// moves us to next pair. might stay where we are if we are on a pair
+	fn next_pair(&mut self) -> Option<usize> {
+		self.pair = find_pairs_u8(&self.digits);
+		if self.pair.is_some() {
+			return Some(self.current)
+		}
+		if self.digits[0] <= self.digits[1] {
+			panic!("Shouldn't be here!");
+		}
+		let diff = self.digits[0] - self.digits[1];
+		self.digits[1] = self.digits[0];
+		self.current += 10 * diff as usize;
+		if self.current < self.limit {
+			return self.next_pair();
+		}
+		None
+	}
+
+	fn fix_increasing(&mut self) {
+		let mut min = 0;
+		for (idx, digit) in self.digits.iter_mut().enumerate().rev() {
+			if *digit < min {
+				let diff = min - *digit;
+				self.current += Self::calc_digit(idx, diff);
+				*digit = min;
+			}
+			min = *digit;
+		}
+	}
+
+	// retuns index of highest touched
+	fn add_at_digit(&mut self, idx:usize, val:u8) -> usize {
+		let mut idx = idx;
+		self.current += Self::calc_digit(idx, val);
+		while idx < self.digits.len() {
+			self.digits[idx] += 1;
+			if self.digits[idx] >= 10 {
+				self.digits[idx] = 0;
+				idx += 1;
+			}
+			else {
+				break;
+			}
+		}
+		idx
+	}
+
+	fn calc_digit(idx:usize, num:u8) -> usize {
+		10usize.pow(idx as u32) * num as usize
+	}
+
+	fn new(start:usize, end:usize, num_digits:usize) -> Self {
+		let mut res = PasswordIter{
+			digits: start.to_string().bytes().map(|c| c - b'0').rev().collect(),
+			current: start,
+			limit: end,
+			pair: None,
+		};
+		res.digits.resize(num_digits, 0);
+		assert!(Self::calc_digit(num_digits, 1) > end, "Limit is too high!");
+		assert!(num_digits >= 3, "Need at least 3 digits limit! Got {}.", num_digits);
+		res
+	}
+}
+
+impl Iterator for PasswordIter {
+	type Item = usize;
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.current > self.limit {
+			return None;
+		}
+		// i.e if first
+		if self.pair.is_none() { 
+			self.fix_increasing();
+			return self.next_pair();
+		}
+		let idx = self.add_at_digit(0, 1);
+		self.fix_increasing(); // this shouldn't affect anything above idx
+		if self.current > self.limit {
+			return None;
+		}
+		if idx >= self.pair.unwrap() {
+			return self.next_pair();
+		}
+		Some(self.current)
+	}
+}
+
+fn day4a() {
+	let count = PasswordIter::new(134792, 675810, 6).count();
+	println!("Day4a: {}", count);
+	assert_eq!(count, 1955);
+}
+
+fn day4b() {
+	// let count = PasswordIter::new(134792, 675810, 6).count();
+	// println!("Day4a: {}", count);
+}
 
 // DAY 3 ---------------------------------------------------------------------------------------------
 
