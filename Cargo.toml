@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 vek = "0.9.11"
 permutohedron = "0.2.4"
+ordered-float = "1.0.2"
