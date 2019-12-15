@@ -93,6 +93,20 @@ impl Intcode {
     	None
 	}
 
+	pub fn run_to_sized_out<I>(&mut self, count:usize, mut input:I) -> (bool, Vec<i64>)
+    	where I: FnMut() -> i64
+	{
+		let mut res = Vec::new();
+		while self.pc.is_some() {
+			self.pc = self.cycle(&mut input, &mut |out| res.push(out));
+			if res.len() >= count {
+				assert_eq!(res.len(), count);
+				return (true, res);
+			}
+		}
+    	(false, res)
+	}
+
 	pub fn cycle<I, O>(&mut self, input:&mut I, output:&mut O) -> Option<usize>
 		where I: FnMut() -> i64, O: FnMut(i64)
 	{
