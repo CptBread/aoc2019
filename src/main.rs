@@ -281,29 +281,29 @@ fn day15b() {
     let mut is_walkback = false;
     let mut steps = 0;
     let mut max_steps = 0;
-    let mut found_ox = false;
+    let mut ox_pos = None;
     let mut first = true;
     while !done { 
         if let Some(res) = comp.run_to_out(|| {
-            if found_ox {
-                for y in 0..=rect.h {
-                    for x in 0..=rect.w {
-                        let p = Vec2::new(rect.x + x, rect.y + y);
-                        if p == pos {
-                            print!("@");
-                        }
-                        else if find_data.contains_key(&p) {
-                            print!(".");
-                        }
-                        else {
-                            print!(" ");
-                        }
-                    }
-                    println!("");
-                }
-                println!("");
-                term.read_key();
-            }
+            // if ox_pos.is_some() {
+            //     for y in 0..=rect.h {
+            //         for x in 0..=rect.w {
+            //             let p = Vec2::new(rect.x + x, rect.y + y);
+            //             if p == pos {
+            //                 print!("@");
+            //             }
+            //             else if find_data.contains_key(&p) {
+            //                 print!(".");
+            //             }
+            //             else {
+            //                 print!(" ");
+            //             }
+            //         }
+            //         println!("");
+            //     }
+            //     println!("steps {} {}", steps, max_steps);
+            //     term.read_key();
+            // }
 
             if first {
                 first = false;
@@ -322,15 +322,15 @@ fn day15b() {
                     // walkback
                     while !data.has_dir() {
                         if data.is_root() {
-                            if data.has_dir() {
-                                break;
-                            }
                             done = true;
                             return 1;
                         }
                         walkback.push(data.back);
                         pos = FindData::calc_pos(pos, data.back);
                         data = find_data.get_mut(&pos).unwrap();
+                        if data.steps > steps {
+                            data.steps = steps + 1;
+                        }
                     }
                     steps = data.steps;
                     walkback.reverse();
@@ -360,27 +360,11 @@ fn day15b() {
                     1 => {pos = p;},
                     2 => {
                         pos = p;
-                        if !found_ox {
-                            found_ox = true;
-                            let to_new = steps + 1;
-                            let mut p = pos;
-                            let mut data = find_data.entry(pos).and_modify(|v| *v = FindData::new_root()).or_insert(FindData::new_root());
-                            let mut dir_back = FindData::rev_dir(dir_code);
-                            data.mark(dir_back);
+                        if ox_pos.is_none() {
+                            ox_pos = Some(pos);
                             steps = 0;
-                            // correct the back dir to be according to the new root
-                            while dir_back != !0 {
-                                p = FindData::calc_pos(p, dir_back);
-                                data = find_data.get_mut(&p).unwrap();
-                                let next = data.back;
-                                data.back = FindData::rev_dir(dir_back);
-                                dir_back = next;
-                            }
-                            for (k, d) in find_data.iter_mut() {
-                                if *k != pos {
-                                    d.steps = to_new - d.steps;
-                                }
-                            }
+                            let res = find_data.insert(pos, FindData::new(dir_code, steps));
+                            assert!(res.is_none());
                         }
                     },
                     _ => panic!("invalid out!"),
@@ -395,24 +379,32 @@ fn day15b() {
             panic!("program halted!");
         }
     }
-    for y in 0..=rect.h {
-        for x in 0..=rect.w {
-            let p = Vec2::new(rect.x + x, rect.y + y);
-            if p == pos {
-                print!("@");
-            }
-            else if find_data.contains_key(&p) {
-                print!(".");
-            }
-            else {
-                print!(" ");
+
+    let mut ticks = 0;
+    let mut current = vec![ox_pos.unwrap()];
+    let mut next = Vec::new();
+
+    let adjecent = vec![
+        Vec2::new(1, 0),
+        Vec2::new(-1, 0),
+        Vec2::new(0, 1),
+        Vec2::new(0, -1),
+    ];
+    while !current.is_empty() {
+        ticks += 1;
+        for p in current.iter() {
+            for a in adjecent.iter() {
+                let pos = p + a;
+                if find_data.remove(&pos).is_some() {
+                    next.push(pos);
+                }
             }
         }
-        println!("");
+        std::mem::swap(&mut current, &mut next);
+        next.clear();
     }
-    println!("");
 
-    println!("Day15b: {}", max_steps);
+    println!("Day15b: {}", ticks - 1);
 }
 
 // DAY 13 ---------------------------------------------------------------------------------------------
