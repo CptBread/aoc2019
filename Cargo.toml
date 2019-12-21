@@ -12,3 +12,5 @@ permutohedron = "0.2.4"
 ordered-float = "1.0.2"
 itertools = "0.8.2"
 console = "0.9.1"
+# sorted_bread_box = {git = "https://github.com/CptBread/sorted_bread_box"}
+sorted_bread_box = {path = "../sorted_bread_box"}

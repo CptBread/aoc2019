@@ -14,6 +14,8 @@ use ordered_float::NotNan;
 use itertools::Itertools;
 use console::{Key, Term};
 
+use sorted_bread_box::*;
+
 mod intcode;
 use intcode::*;
 
@@ -21,41 +23,41 @@ type Vec3i = Vec3<i32>;
 type Vec2i = Vec2<i32>;
 
 fn main() {
-    day1a();
-    day1b();
-    day2a();
-    day2b();
-    day3a();
-    day3b();
-    day4a();
-    // forgot to commit 4b.
-    // day4b();
-    day5a();
-    day5b();
-    day6a();
-    day6b();
-    day7a();
-    day7b();
-    day8a();
-    day8b();
-    day9a();
-    day9b();
-    day10a();
-    day10b();
-    day11a();
-    day11b();
-    day12a();
-    day12b();
-    day13a();
-    day13b();
-    day14a();
-    day14b();
-    day15();
-    day16a();
-    // day16b(); // too slow in debug
-    day17a();
-    day17b();
-    day18a();
+    // day1a();
+    // day1b();
+    // day2a();
+    // day2b();
+    // day3a();
+    // day3b();
+    // day4a();
+    // // forgot to commit 4b.
+    // // day4b();
+    // day5a();
+    // day5b();
+    // day6a();
+    // day6b();
+    // day7a();
+    // day7b();
+    // day8a();
+    // day8b();
+    // day9a();
+    // day9b();
+    // day10a();
+    // day10b();
+    // day11a();
+    // day11b();
+    // day12a();
+    // day12b();
+    // day13a();
+    // day13b();
+    // day14a();
+    // day14b();
+    // day15();
+    // day16a();
+    // // day16b(); // too slow in debug
+    // day17a();
+    // day17b();
+    // day18a();
     day18b();
 }
 
@@ -97,93 +99,35 @@ fn day18a() {
     let adjecent = [(1i32, 0b0001), (-1, 0b0010), (w, 0b0100), (-w, 0b1000)];
     let rev_adjecent = [1, 0, 3, 2];
 
-    let mut added = Vec::new();
-    added.resize(map.len(), false);
     let mut keys = Vec::new();
     let mut nodes = HashMap::<i32, Node18>::new();
-    let mut to_check = vec![(!0, start)];
-    while !to_check.is_empty() {
-        let (from, mut idx) = to_check.pop().unwrap();
-        let mut my_from = from;
-        let mut dist = 0;
-
-        loop {
-            if added[idx as usize] {
-                let node = nodes.get_mut(&idx).unwrap_or_else(|| panic!("node marked as added without being added. {}", idx));
-                let found = node.from.iter().position(|f| *f == from);
-                let at = found.unwrap_or_else(||{let ret = node.adj; node.adj += 1; ret as usize});
-                assert!(at < 4, "Invalid add adj. {:?} from {} dist {}", node, from, dist);
-                node.from[at] = from;
-                node.dist[at].min(dist);
-
-                let node = nodes.get_mut(&from).expect("invalid from!");
-                let found = node.from.iter().position(|f| *f == idx);
-                let at = found.unwrap_or_else(||{let ret = node.adj; node.adj += 1; ret as usize});
-                assert!(at < 4, "Invalid node add adj. {:?} from {} dist {}", node, idx, dist);
-                node.from[at] = idx;
-                node.dist[at] = dist;
-                break;
-            }
-            
-            let mut mask = 0;
-            let mut count = 0;
-            let mut valid_pos = !0;
-            dist += 1;
-            for (off, adj_mask) in adjecent.iter() {
-                let pos = idx + off;
-                if pos > 0 && (pos as usize) < map.len() {
-                    if pos == my_from {
-                        mask |= adj_mask;
-                        continue;
-                    }
-                    let c = map[pos as usize];
-                    if c != '#' {
-                        valid_pos = pos;
-                        mask |= adj_mask;
-                        count += 1;
-                    }
-                }
-            }
-            if count == 1 && map[idx as usize] == '.' {
-                my_from = idx;
-                idx = valid_pos;
-            }
-            else {
-                added[idx as usize] = true;
-                let node = nodes.entry(idx).or_insert(Node18{
-                    idx,
-                    tile: match map[idx as usize] {
-                        c@'A'..='Z' => Tile18::Door(c.to_ascii_lowercase()),
-                        c@'a'..='z' => {keys.push((idx, c)); Tile18::Key(c)},
-                        '@' => Tile18::Start,
-                        '.' => Tile18::None,
-                        c => panic!("invalid map char! {} {}", c, idx),
-                    },
-                    adj: 0,
-                    from: [!0;4],
-                    dist: [!0;4],
-                });
-                if from != !0 {
-                    assert!(node.adj < 4, "Invalid add adj. {:?} from {} dist {}", node, from, dist);
-                    node.from[node.adj as usize] = from;
-                    node.dist[node.adj as usize] = dist;
-                    node.adj += 1;
-
-                    let f_node = nodes.get_mut(&from).expect("invalid from!");
-                    assert!(f_node.adj < 4, "Invalid f_node add adj. {:?} from {} dist {}", f_node, idx, dist);
-                    f_node.from[f_node.adj as usize] = idx;
-                    f_node.dist[f_node.adj as usize] = dist;
-                    f_node.adj += 1;
-                }
-                for (off, adj_mask) in adjecent.iter() {
-                    let pos = idx + off;
-                    if 0 != mask & *adj_mask && !added[pos as usize] {
-                        to_check.push((idx, pos));
-                    }
-                }
-                break;
+    for idx in map.iter().enumerate().filter_map(|(idx, c)| if *c == '#' {None} else {Some(idx as i32)}) {
+        let mut mask = 0;
+        let mut count = 0;
+        let mut valid_pos = !0;
+        let mut node = Node18{
+            idx,
+            tile: match map[idx as usize] {
+                c@'A'..='Z' => Tile18::Door(c.to_ascii_lowercase()),
+                c@'a'..='z' => {keys.push((idx, c)); Tile18::Key(c)},
+                '@' => Tile18::Start,
+                '.' => Tile18::None,
+                c => panic!("invalid map char! {} {}", c, idx),
+            },
+            adj: 0,
+            from: [!0;4],
+            dist: [!0;4],
+        };
+        for (off, adj_mask) in adjecent.iter() {
+            let pos = idx + off;
+            if pos > 0 && (pos as usize) < map.len() && map[pos as usize] != '#' {
+                let at = node.adj as usize;
+                node.from[at] = pos;
+                node.dist[at] = 1;
+                node.adj += 1;
             }
         }
+        nodes.insert(idx, node);
     }
     println!("From {} tiles to {} nodes", map.len(), nodes.len());
     let num_nodes = nodes.len();
@@ -227,13 +171,199 @@ fn day18a() {
     }
     println!("Remove 'paths'. From {} nodes to {} nodes", num_nodes, nodes.len());
     // let num_nodes = nodes.len();
-
+    // for (idx, mut c) in map.iter().enumerate() {
+    //     let idx = idx as i32;
+    //     if idx != 0 && idx % w == 0 {
+    //         println!("");
+    //     }
+    //     c = if nodes.get(&idx).is_some() {&'*'} else {c}; 
+    //     print!("{}", c);
+    // }
+    let mut node_dist = HashMap::new();
+    node_dist.insert((0, start), 0);
+    
     let all_keys = (1 << keys.len()) - 1;
-    println!("{:#b} {}", all_keys, keys.len());
+    let mut to_check = Vec::new();
+    to_check.push((0, 0, start));
+    let comp = |r:(u32,u32,i32),l:(u32,u32,i32)| -> Ordering {r.0.cmp(&l.0).reverse().then(r.1.cmp(&l.1)).then(r.2.cmp(&l.2))};
+    while !to_check.is_empty() {
+        let (dist, mut key, idx) = to_check.pop().unwrap();
+
+        let node = nodes.get(&idx).unwrap();
+        if !match node.tile {
+            Tile18::Door(c) => door_key_mask(c) & key != 0,
+            Tile18::Key(c) => {key |= door_key_mask(c); true},
+            _ => true,
+        } {
+            continue;
+        }
+        if key == all_keys {
+            println!("Day18a: {}", dist);
+            assert_eq!(dist, 5402);
+            break;
+        }
+        for n in 0..node.adj as usize {
+            let at = node.from[n];
+            let alt = node.dist[n] + dist;
+            let dist_ref = node_dist.entry((key, at)).or_insert(!0);
+            let current_dist = *dist_ref;
+            if current_dist > alt {
+                *dist_ref = alt;
+                // remove old
+                to_check.binary_search_by(|o| comp(*o, (current_dist, key, at))).map(|n| to_check.remove(n));
+                // add new
+                let ins = to_check.binary_search_by(|o| comp(*o, (alt, key, at))).unwrap_err();
+                to_check.insert(ins, (alt, key, at));
+            }
+        }
+    }
 }
 
 fn day18b() {
+    let file = File::open("data/18b.txt").unwrap();
+    let mut map = Vec::new();
+    let mut w = std::i32::MAX;
+    let mut start = Vec::new();
+    for c in file.bytes().map(|r| r.expect("failed to read file") as char) {
+        match c {
+            '\r' => {},
+            '\n' => w = w.min(map.len() as i32),
+            '@' => {start.push(map.len() as i32); map.push(c)},
+            _ => map.push(c),
+        }
+    }
+    let adjecent = [(1i32, 0b0001), (-1, 0b0010), (w, 0b0100), (-w, 0b1000)];
 
+    let mut keys = Vec::new();
+    let mut nodes = HashMap::<i32, Node18>::new();
+    for idx in map.iter().enumerate().filter_map(|(idx, c)| if *c == '#' {None} else {Some(idx as i32)}) {
+        let mut mask = 0;
+        let mut count = 0;
+        let mut valid_pos = !0;
+        let mut node = Node18{
+            idx,
+            tile: match map[idx as usize] {
+                c@'A'..='Z' => Tile18::Door(c.to_ascii_lowercase()),
+                c@'a'..='z' => {keys.push((idx, c)); Tile18::Key(c)},
+                '@' => Tile18::Start,
+                '.' => Tile18::None,
+                c => panic!("invalid map char! {} {}", c, idx),
+            },
+            adj: 0,
+            from: [!0;4],
+            dist: [!0;4],
+        };
+        for (off, adj_mask) in adjecent.iter() {
+            let pos = idx + off;
+            if pos > 0 && (pos as usize) < map.len() && map[pos as usize] != '#' {
+                let at = node.adj as usize;
+                node.from[at] = pos;
+                node.dist[at] = 1;
+                node.adj += 1;
+            }
+        }
+        nodes.insert(idx, node);
+    }
+    println!("From {} tiles to {} nodes", map.len(), nodes.len());
+    let num_nodes = nodes.len();
+    // remove leaves
+    let mut to_check:Vec<i32> = nodes.iter().filter_map(|(k, n)| {
+        if n.tile == Tile18::None && n.adj == 1 {Some(*k)} else {None}
+    }).collect();
+    while !to_check.is_empty() {
+        let k = to_check.pop().unwrap();
+        let node = nodes.remove(&k).expect("trying to remove empty nodes that doesn't exist");
+        let other = nodes.get_mut(&node.from[0]).unwrap();
+        let at = other.from.iter().position(|v| *v == k).unwrap();
+        other.from[at..].rotate_left(1);
+        other.dist[at..].rotate_left(1);
+        other.adj -= 1;
+        if other.adj <= 1 && other.tile == Tile18::None {
+            to_check.push(other.idx);
+        }
+    }
+
+    println!("Remove leaves. From {} nodes to {} nodes", num_nodes, nodes.len());
+    let num_nodes = nodes.len();
+    // remove "paths" i.e. None tiles with 2 adj
+    let mut to_check:Vec<i32> = nodes.iter().filter_map(|(k, n)| {
+        if n.tile == Tile18::None && n.adj == 2 {Some(*k)} else {None}
+    }).collect();
+    while !to_check.is_empty() {
+        let k = to_check.pop().unwrap();
+        let node = nodes.remove(&k).unwrap();
+        let dist = node.dist[0] + node.dist[1];
+
+        let other = nodes.get_mut(&node.from[0]).unwrap();
+        let at = other.from.iter().position(|v| *v == k).unwrap();
+        other.from[at] = node.from[1];
+        other.dist[at] = dist;
+
+        let other = nodes.get_mut(&node.from[1]).unwrap();
+        let at = other.from.iter().position(|v| *v == k).unwrap();
+        other.from[at] = node.from[0];
+        other.dist[at] = dist;
+    }
+    println!("Remove 'paths'. From {} nodes to {} nodes", num_nodes, nodes.len());
+    
+    
+    let all_keys = (1 << keys.len()) - 1;
+    let mut node_dist:HashMap<_, _> = start.iter().map(|i| ((0, *i), (0, !0))).collect();
+    let mut to_check:Vec<_> = start.iter().enumerate().map(|(idx, i)| (0u32, 0u32, *i, idx)).collect();
+
+    let mut pos_cache:HashMap<u32,Vec<i32>> = HashMap::new();
+    pos_cache.insert(0, start);
+    let comp = |r:(u32,u32,i32,usize),l:(u32,u32,i32,usize)| -> Ordering {r.0.cmp(&l.0).reverse().then(r.1.cmp(&l.1)).then(r.2.cmp(&l.2)).then(r.3.cmp(&l.3))};
+    while !to_check.is_empty() {
+        let (dist, mut key, idx, bot) = to_check.pop().unwrap();
+
+        let node = nodes.get(&idx).unwrap();
+        if !match node.tile {
+            Tile18::Door(c) => door_key_mask(c) & key != 0,
+            Tile18::Key(c) => {
+                let at_key = door_key_mask(c);
+                if key & at_key == 0 {
+                    let mut bots_pos:Vec<i32> = pos_cache.get(&key).unwrap().clone();
+                    bots_pos[bot] = idx;
+                    key |= door_key_mask(c);
+                    for (bot, at) in bots_pos.iter().enumerate() {
+                        let at = *at;
+                        if at != idx {
+                            let (dist_ref, from_ref) = node_dist.entry((key, at)).or_insert((!0, !0));
+                            *dist_ref = dist;
+                            *from_ref = idx;
+                            let ins = to_check.binary_search_by(|o| comp(*o, (dist, key, at, bot))).unwrap_err();
+                            to_check.insert(ins, (dist, key, at, bot));
+                        }
+                    }
+                    pos_cache.insert(key, bots_pos);
+                }
+                true
+            },
+            _ => true,
+        } {
+            continue;
+        }
+        if key == all_keys {
+            println!("Day18b: {}", dist);
+            break;
+        }
+        for n in 0..node.adj as usize {
+            let at = node.from[n];
+            let alt = node.dist[n] + dist;
+            let (dist_ref, from_ref) = node_dist.entry((key, at)).or_insert((!0, !0));
+            let current_dist = *dist_ref;
+            if current_dist > alt {
+                *from_ref = node.idx;
+                *dist_ref = alt;
+                // remove old
+                to_check.binary_search_by(|o| comp(*o, (current_dist, key, at, bot))).map(|n| to_check.remove(n));
+                // add new
+                let ins = to_check.binary_search_by(|o| comp(*o, (alt, key, at, bot))).unwrap_err();
+                to_check.insert(ins, (alt, key, at, bot));
+            }
+        }
+    }
 }
 
 // DAY 17 ---------------------------------------------------------------------------------------------

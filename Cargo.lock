@@ -8,6 +8,7 @@ dependencies = [
  "itertools 0.8.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ordered-float 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "permutohedron 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sorted_bread_box 0.1.0",
  "vek 0.9.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -155,6 +156,10 @@ dependencies = [
 name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "sorted_bread_box"
+version = "0.1.0"
 
 [[package]]
 name = "static_assertions"
