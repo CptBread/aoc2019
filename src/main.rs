@@ -58,8 +58,192 @@ fn main() {
     // day17a();
     // day17b();
     // day18a();
-    day18b();
+    // day18b();
+    day22a();
+    day22b();
 }
+
+enum Shuffle22 {
+    Cut(usize),
+    CutBack(usize),
+    Step(usize),
+    Rev,
+}
+
+fn modular_pow(base:i128, exp:i128, mut modulus:i128) -> i128 {
+    let mut powers_of_two = vec![base % modulus];
+    let mut curr_power = 2;
+    while curr_power < exp {
+        let last_power = *powers_of_two.last().unwrap();
+        powers_of_two.push((last_power * last_power) % modulus);
+        curr_power <<= 1;
+    }
+    let mut res = 1;
+    let (mut exponent_process, mut power_idx) = (exp, 0);
+    while exponent_process != 0 {
+        if (exponent_process & 1) == 1 { res = (res * powers_of_two[power_idx]) % modulus; }
+        exponent_process >>= 1;
+        power_idx += 1;
+    }
+    res
+}
+    
+fn day22a() {
+    use Shuffle22::*;
+    let file = File::open("data/22.txt").unwrap();
+    let read = BufReader::new(file);
+    let mut ops = Vec::new();
+    for line in read.lines() {
+        let line = line.unwrap();
+        const rev:&'static str = "deal into new stack";
+        const step:&'static str = "deal with increment ";
+        const cut:&'static str = "cut ";
+        const cut_back:&'static str = "cut -";
+        if line.starts_with(rev) {
+            ops.push(Rev);
+        }
+        else if line.starts_with(step) {
+            ops.push(Step(line[step.len()..].parse::<usize>().unwrap()));
+        }
+        else if line.starts_with(cut_back) {
+            ops.push(CutBack(line[cut_back.len()..].parse::<usize>().unwrap()));
+        }
+        else if line.starts_with(cut) {
+            ops.push(Cut(line[cut.len()..].parse::<usize>().unwrap()));
+        }
+    }
+
+    let num = 10007;
+    let mut deck:Vec<usize> = (0..num).collect();
+    for op in ops.iter() {
+        match op {
+            Cut(n) => {
+                deck.rotate_left(*n);
+            },
+            CutBack(n) => {
+                deck.rotate_right(*n);
+            },
+            Step(n) => {
+                let mut temp = Vec::new();
+                temp.resize(deck.len(), 0);
+                let mut idx = 0;
+                for d in deck.into_iter() {
+                    temp[idx] = d;
+                    idx = (idx + n) % num;
+                }
+                deck = temp;
+            },
+            Rev => {
+                deck.reverse();
+            },
+        }
+    }
+    // for n in deck.iter() {
+    //     print!("{} ", n);
+    // }
+    // println!("");
+    let pos = deck.iter().position(|x| *x == 2019).unwrap();
+    println!("{}", pos);
+    // assert_eq!(pos, 8775);
+}
+
+fn gcd128(mut x:i128, mut y:i128) -> i128 {
+    while y != 0 {
+        let t = y;
+        y = x % y;
+        x = t;
+    }
+    x
+}
+
+fn day22b() {
+    use Shuffle22::*;
+    let file = File::open("data/22.txt").unwrap();
+    let read = BufReader::new(file);
+    let mut ops = Vec::new();
+    for line in read.lines() {
+        let line = line.unwrap();
+        const rev:&'static str = "deal into new stack";
+        const step:&'static str = "deal with increment ";
+        const cut:&'static str = "cut ";
+        const cut_back:&'static str = "cut -";
+        if line.starts_with(rev) {
+            ops.push(Rev);
+        }
+        else if line.starts_with(step) {
+            ops.push(Step(line[step.len()..].parse::<usize>().unwrap()));
+        }
+        else if line.starts_with(cut_back) {
+            ops.push(CutBack(line[cut_back.len()..].parse::<usize>().unwrap()));
+        }
+        else if line.starts_with(cut) {
+            ops.push(Cut(line[cut.len()..].parse::<usize>().unwrap()));
+        }
+    }
+
+    let num = 119315717514047;
+    // let num = 10007;
+    let mut idx = 2020;
+    // let mut first = None;
+    let mut ok = false;
+    let mut times = 0;
+    let mut mult = 1i128;
+    let mut c = 0i128;
+    for op in ops.iter() {
+        match op {
+            Cut(n) => {
+                let n = *n as i128;
+                c = (c + num - n) % num;
+                
+            },
+            CutBack(n) => {
+                let n = *n as i128;
+                c = (c + n) % num;
+            },
+            Step(n) => {
+                let n = *n as i128;
+                mult = (mult * n) % num;
+                c = (c * n) % num;
+            },
+            Rev => {
+                mult = -mult;
+                c = num - c - 1;
+            },
+        }
+    }
+    println!("n * {} + {}", mult, c);
+    let rep = 101741582076661i128;
+    // let rep = 52123i128;
+
+    // let i1 = modular_pow(mult, rep, num) * idx % num;
+    // let i2 = (modular_pow(mult, rep, num) + num - 1) % num;
+    // let i3 = c * i2 % num;
+    // let i4 = modular_pow(mult - 1, num - 2, num);
+    // let ans = (i1 + i3 * i4) % num;
+    // println!(". {}", ans);
+
+    let i1 = modular_pow(mult, rep, num) * idx % num;
+    let i2 = (modular_pow(mult, rep, num) + num - 1) % num;
+    let i3 = c * i2 % num;
+    let i4 = modular_pow(mult - 1, num - 2, num);
+    let ans = (i1 + i3 * i4) % num;
+    println!("{}", ans);
+
+    // let mut idx = 2020;
+    for _ in 0..rep {
+        idx = (idx * mult + c) % num;
+    }
+    println!("{}", idx);
+    
+    // for n in deck.iter() {
+    //     print!("{} ", n);
+    // }
+    // println!("");
+    // println!("{}", idx);
+    // assert_eq(pos, 8775);
+}
+
+// fn DAY 18 ---------------------------------------------------------------------------------------------
 
 #[derive(Debug, PartialEq, Eq)]
 enum Tile18 {
@@ -308,15 +492,17 @@ fn day18b() {
     
     
     let all_keys = (1 << keys.len()) - 1;
-    let mut node_dist:HashMap<_, _> = start.iter().map(|i| ((0, *i), (0, !0))).collect();
+    let mut node_dist:HashMap<_, _> = start.iter().map(|i| ((0, *i), (0, (0, !0)))).collect();
     let mut to_check:Vec<_> = start.iter().enumerate().map(|(idx, i)| (0u32, 0u32, *i, idx)).collect();
+
+    let mut term = Term::stdout();
 
     let mut pos_cache:HashMap<u32,Vec<i32>> = HashMap::new();
     pos_cache.insert(0, start);
     let comp = |r:(u32,u32,i32,usize),l:(u32,u32,i32,usize)| -> Ordering {r.0.cmp(&l.0).reverse().then(r.1.cmp(&l.1)).then(r.2.cmp(&l.2)).then(r.3.cmp(&l.3))};
     while !to_check.is_empty() {
         let (dist, mut key, idx, bot) = to_check.pop().unwrap();
-
+        let old_key = key.clone();
         let node = nodes.get(&idx).unwrap();
         if !match node.tile {
             Tile18::Door(c) => door_key_mask(c) & key != 0,
@@ -326,12 +512,17 @@ fn day18b() {
                     let mut bots_pos:Vec<i32> = pos_cache.get(&key).unwrap().clone();
                     bots_pos[bot] = idx;
                     key |= door_key_mask(c);
+                    let (dist_ref, from_ref) = node_dist.entry((key, idx)).or_insert((!0, (0, !0)));
+                    if *dist_ref > dist {
+                        *dist_ref = dist;
+                        *from_ref = (old_key, idx);
+                    }
                     for (bot, at) in bots_pos.iter().enumerate() {
                         let at = *at;
                         if at != idx {
-                            let (dist_ref, from_ref) = node_dist.entry((key, at)).or_insert((!0, !0));
+                            let (dist_ref, from_ref) = node_dist.entry((key, at)).or_insert((!0, (0, !0)));
                             *dist_ref = dist;
-                            *from_ref = idx;
+                            *from_ref = (key, idx);
                             let ins = to_check.binary_search_by(|o| comp(*o, (dist, key, at, bot))).unwrap_err();
                             to_check.insert(ins, (dist, key, at, bot));
                         }
@@ -346,15 +537,39 @@ fn day18b() {
         }
         if key == all_keys {
             println!("Day18b: {}", dist);
+            let mut at = (key, idx);
+            let mut nd = *node_dist.get(&at).unwrap();
+            let mut last = (key, idx);
+            loop {
+                println!("{:?} from {:?} (dist: {})", last, nd.1, nd.0);
+
+                // for (idx, mut c) in map.iter().enumerate() {
+                //     let idx = idx as i32;
+                //     if idx != 0 && idx % w == 0 {
+                //         println!("");
+                //     }
+                //     c = if idx == (nd.1).1 {&'*'} else if idx == last.1 {&'0'} else {c}; 
+                //     print!("{}", c);
+                // }
+                // println!("");
+                term.read_key();
+
+                if (nd.1).1 == !0 || nd.0 == 38 && (nd.1).1 == 100 {
+                    println!("Stopped");
+                    break;
+                }
+                last =  nd.1;
+                nd = *node_dist.get(&nd.1).unwrap();
+            }
             break;
         }
         for n in 0..node.adj as usize {
             let at = node.from[n];
             let alt = node.dist[n] + dist;
-            let (dist_ref, from_ref) = node_dist.entry((key, at)).or_insert((!0, !0));
+            let (dist_ref, from_ref) = node_dist.entry((key, at)).or_insert((!0, (0, !0)));
             let current_dist = *dist_ref;
             if current_dist > alt {
-                *from_ref = node.idx;
+                *from_ref = (key, idx);
                 *dist_ref = alt;
                 // remove old
                 to_check.binary_search_by(|o| comp(*o, (current_dist, key, at, bot))).map(|n| to_check.remove(n));
